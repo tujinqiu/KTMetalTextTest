@@ -15,6 +15,15 @@
 		E369AF0C21B6ACF00049EB9B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = E369AF0B21B6ACF00049EB9B /* main.m */; };
 		E369AF1621B6ACF00049EB9B /* KTMetalTextTestTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E369AF1521B6ACF00049EB9B /* KTMetalTextTestTests.m */; };
 		E369AF2121B6ACF00049EB9B /* KTMetalTextTestUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = E369AF2021B6ACF00049EB9B /* KTMetalTextTestUITests.m */; };
+		E369AF2F21B6C5CB0049EB9B /* Shader.metal in Sources */ = {isa = PBXBuildFile; fileRef = E369AF2E21B6C5CB0049EB9B /* Shader.metal */; };
+		E369AF3221B6C5DB0049EB9B /* MetalRender.m in Sources */ = {isa = PBXBuildFile; fileRef = E369AF3121B6C5DB0049EB9B /* MetalRender.m */; };
+		E369AF4421B6C6700049EB9B /* dict.c in Sources */ = {isa = PBXBuildFile; fileRef = E369AF3621B6C6700049EB9B /* dict.c */; };
+		E369AF4521B6C6700049EB9B /* priorityq.c in Sources */ = {isa = PBXBuildFile; fileRef = E369AF3821B6C6700049EB9B /* priorityq.c */; };
+		E369AF4621B6C6700049EB9B /* sweep.c in Sources */ = {isa = PBXBuildFile; fileRef = E369AF3A21B6C6700049EB9B /* sweep.c */; };
+		E369AF4721B6C6700049EB9B /* geom.c in Sources */ = {isa = PBXBuildFile; fileRef = E369AF3B21B6C6700049EB9B /* geom.c */; };
+		E369AF4821B6C6700049EB9B /* tess.c in Sources */ = {isa = PBXBuildFile; fileRef = E369AF3D21B6C6700049EB9B /* tess.c */; };
+		E369AF4921B6C6700049EB9B /* bucketalloc.c in Sources */ = {isa = PBXBuildFile; fileRef = E369AF4121B6C6700049EB9B /* bucketalloc.c */; };
+		E369AF4A21B6C6700049EB9B /* mesh.c in Sources */ = {isa = PBXBuildFile; fileRef = E369AF4221B6C6700049EB9B /* mesh.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +60,24 @@
 		E369AF1C21B6ACF00049EB9B /* KTMetalTextTestUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KTMetalTextTestUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E369AF2021B6ACF00049EB9B /* KTMetalTextTestUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = KTMetalTextTestUITests.m; sourceTree = "<group>"; };
 		E369AF2221B6ACF00049EB9B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E369AF2E21B6C5CB0049EB9B /* Shader.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shader.metal; sourceTree = "<group>"; };
+		E369AF3021B6C5DB0049EB9B /* MetalRender.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalRender.h; sourceTree = "<group>"; };
+		E369AF3121B6C5DB0049EB9B /* MetalRender.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MetalRender.m; sourceTree = "<group>"; };
+		E369AF3421B6C6660049EB9B /* tesselator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tesselator.h; sourceTree = "<group>"; };
+		E369AF3621B6C6700049EB9B /* dict.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dict.c; sourceTree = "<group>"; };
+		E369AF3721B6C6700049EB9B /* tess.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tess.h; sourceTree = "<group>"; };
+		E369AF3821B6C6700049EB9B /* priorityq.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = priorityq.c; sourceTree = "<group>"; };
+		E369AF3921B6C6700049EB9B /* bucketalloc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bucketalloc.h; sourceTree = "<group>"; };
+		E369AF3A21B6C6700049EB9B /* sweep.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sweep.c; sourceTree = "<group>"; };
+		E369AF3B21B6C6700049EB9B /* geom.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = geom.c; sourceTree = "<group>"; };
+		E369AF3C21B6C6700049EB9B /* mesh.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mesh.h; sourceTree = "<group>"; };
+		E369AF3D21B6C6700049EB9B /* tess.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tess.c; sourceTree = "<group>"; };
+		E369AF3E21B6C6700049EB9B /* dict.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dict.h; sourceTree = "<group>"; };
+		E369AF3F21B6C6700049EB9B /* priorityq.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = priorityq.h; sourceTree = "<group>"; };
+		E369AF4021B6C6700049EB9B /* sweep.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sweep.h; sourceTree = "<group>"; };
+		E369AF4121B6C6700049EB9B /* bucketalloc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bucketalloc.c; sourceTree = "<group>"; };
+		E369AF4221B6C6700049EB9B /* mesh.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mesh.c; sourceTree = "<group>"; };
+		E369AF4321B6C6700049EB9B /* geom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = geom.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,10 +128,15 @@
 		E369AEFB21B6ACEE0049EB9B /* KTMetalTextTest */ = {
 			isa = PBXGroup;
 			children = (
+				E369AF3521B6C6700049EB9B /* Source */,
+				E369AF3321B6C6660049EB9B /* Include */,
 				E369AEFC21B6ACEE0049EB9B /* AppDelegate.h */,
 				E369AEFD21B6ACEE0049EB9B /* AppDelegate.m */,
 				E369AEFF21B6ACEE0049EB9B /* ViewController.h */,
 				E369AF0021B6ACEE0049EB9B /* ViewController.m */,
+				E369AF2E21B6C5CB0049EB9B /* Shader.metal */,
+				E369AF3021B6C5DB0049EB9B /* MetalRender.h */,
+				E369AF3121B6C5DB0049EB9B /* MetalRender.m */,
 				E369AF0221B6ACEE0049EB9B /* Main.storyboard */,
 				E369AF0521B6ACF00049EB9B /* Assets.xcassets */,
 				E369AF0721B6ACF00049EB9B /* LaunchScreen.storyboard */,
@@ -130,6 +162,35 @@
 				E369AF2221B6ACF00049EB9B /* Info.plist */,
 			);
 			path = KTMetalTextTestUITests;
+			sourceTree = "<group>";
+		};
+		E369AF3321B6C6660049EB9B /* Include */ = {
+			isa = PBXGroup;
+			children = (
+				E369AF3421B6C6660049EB9B /* tesselator.h */,
+			);
+			path = Include;
+			sourceTree = "<group>";
+		};
+		E369AF3521B6C6700049EB9B /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				E369AF3621B6C6700049EB9B /* dict.c */,
+				E369AF3721B6C6700049EB9B /* tess.h */,
+				E369AF3821B6C6700049EB9B /* priorityq.c */,
+				E369AF3921B6C6700049EB9B /* bucketalloc.h */,
+				E369AF3A21B6C6700049EB9B /* sweep.c */,
+				E369AF3B21B6C6700049EB9B /* geom.c */,
+				E369AF3C21B6C6700049EB9B /* mesh.h */,
+				E369AF3D21B6C6700049EB9B /* tess.c */,
+				E369AF3E21B6C6700049EB9B /* dict.h */,
+				E369AF3F21B6C6700049EB9B /* priorityq.h */,
+				E369AF4021B6C6700049EB9B /* sweep.h */,
+				E369AF4121B6C6700049EB9B /* bucketalloc.c */,
+				E369AF4221B6C6700049EB9B /* mesh.c */,
+				E369AF4321B6C6700049EB9B /* geom.h */,
+			);
+			path = Source;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -262,9 +323,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E369AF4921B6C6700049EB9B /* bucketalloc.c in Sources */,
+				E369AF4821B6C6700049EB9B /* tess.c in Sources */,
+				E369AF2F21B6C5CB0049EB9B /* Shader.metal in Sources */,
 				E369AF0121B6ACEE0049EB9B /* ViewController.m in Sources */,
 				E369AF0C21B6ACF00049EB9B /* main.m in Sources */,
+				E369AF4421B6C6700049EB9B /* dict.c in Sources */,
+				E369AF4621B6C6700049EB9B /* sweep.c in Sources */,
+				E369AF4721B6C6700049EB9B /* geom.c in Sources */,
+				E369AF4A21B6C6700049EB9B /* mesh.c in Sources */,
 				E369AEFE21B6ACEE0049EB9B /* AppDelegate.m in Sources */,
+				E369AF3221B6C5DB0049EB9B /* MetalRender.m in Sources */,
+				E369AF4521B6C6700049EB9B /* priorityq.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
