@@ -7,7 +7,11 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
 
-@interface MetalRender : NSObject
+@interface MetalRender : NSObject<MTKViewDelegate>
+
+- (instancetype)initWithMTKView:(MTKView *)mtkView;
 
 @end
