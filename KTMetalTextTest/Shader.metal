@@ -21,7 +21,7 @@ vertex MetalVertexOut vertex_func(constant MetalVertex *vertexArr [[ buffer(Meta
 {
     MetalVertexOut out;
     MetalVertex in = vertexArr[vertexId];
-    out.position = in.position;
+    out.position = uniforms.mvpMatrix * in.position;
     out.color = in.color;
     
     return out;
