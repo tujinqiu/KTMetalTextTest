@@ -7,7 +7,16 @@
 //
 
 #import "MetalRender.h"
+#import "MetalHeader.h"
 
 @implementation MetalRender
+
+- (instancetype)init
+{
+    if (self = [super init]) {
+    }
+    
+    return self;
+}
 
 @end

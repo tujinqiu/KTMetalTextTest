@@ -78,6 +78,7 @@
 		E369AF4121B6C6700049EB9B /* bucketalloc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bucketalloc.c; sourceTree = "<group>"; };
 		E369AF4221B6C6700049EB9B /* mesh.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mesh.c; sourceTree = "<group>"; };
 		E369AF4321B6C6700049EB9B /* geom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = geom.h; sourceTree = "<group>"; };
+		E369AF4B21B6C6C10049EB9B /* MetalHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalHeader.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -135,6 +136,7 @@
 				E369AEFF21B6ACEE0049EB9B /* ViewController.h */,
 				E369AF0021B6ACEE0049EB9B /* ViewController.m */,
 				E369AF2E21B6C5CB0049EB9B /* Shader.metal */,
+				E369AF4B21B6C6C10049EB9B /* MetalHeader.h */,
 				E369AF3021B6C5DB0049EB9B /* MetalRender.h */,
 				E369AF3121B6C5DB0049EB9B /* MetalRender.m */,
 				E369AF0221B6ACEE0049EB9B /* Main.storyboard */,
