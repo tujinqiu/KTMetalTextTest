@@ -1,5 +1,5 @@
 //
-//  MetalRender.h
+//  MetalTextRender.h
 //  KTMetalTextTest
 //
 //  Created by tu jinqiu on 2018/12/4.
@@ -10,7 +10,9 @@
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
 
-@interface MetalRender : NSObject<MTKViewDelegate>
+@interface MetalTextRender : NSObject<MTKViewDelegate>
+
+@property(nonatomic, strong, readonly) MDLVertexDescriptor *vertexDescriptor;
 
 - (instancetype)initWithMTKView:(MTKView *)mtkView;
 

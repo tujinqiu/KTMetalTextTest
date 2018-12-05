@@ -1,13 +1,13 @@
 //
-//  MetalHeader.h
+//  MetalTextHeader.h
 //  KTMetalTextTest
 //
 //  Created by tu jinqiu on 2018/12/4.
 //  Copyright © 2018年 tu jinqiu. All rights reserved.
 //
 
-#ifndef MetalHeader_h
-#define MetalHeader_h
+#ifndef MetalTextHeader_h
+#define MetalTextHeader_h
 
 #include <simd/simd.h>
 
@@ -25,4 +25,4 @@ typedef enum {
     MetalBufferIndexUniforms = 1
 }MetalBufferIndex;
 
-#endif /* MetalHeader_h */
+#endif /* MetalTextHeader_h */

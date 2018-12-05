@@ -1,13 +1,13 @@
 //
-//  MetalRender.m
+//  MetalTextRender.m
 //  KTMetalTextTest
 //
 //  Created by tu jinqiu on 2018/12/4.
 //  Copyright © 2018年 tu jinqiu. All rights reserved.
 //
 
-#import "MetalRender.h"
-#import "MetalHeader.h"
+#import "MetalTextRender.h"
+#import "MetalTextHeader.h"
 #import <GLKit/GLKit.h>
 
 static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatrix4)
@@ -21,7 +21,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
     return ret;
 }
 
-@interface MetalRender ()
+@interface MetalTextRender ()
 
 @property(nonatomic, weak) MTKView *mtkView;
 @property(nonatomic, strong) id<MTLDevice> device;
@@ -32,7 +32,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 
 @end
 
-@implementation MetalRender
+@implementation MetalTextRender
 
 - (instancetype)initWithMTKView:(MTKView *)mtkView
 {
@@ -40,11 +40,30 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
         _mtkView = mtkView;
         mtkView.delegate = self;
         _device = mtkView.device;
+        [self p_setupVertexDescriptor];
         [self p_buildPipeline];
         [self p_setupBuffers];
     }
     
     return self;
+}
+
+- (void)p_setupVertexDescriptor
+{
+    _vertexDescriptor = [MDLVertexDescriptor new];
+    _vertexDescriptor.attributes[0].format = MDLVertexFormatFloat3;
+    _vertexDescriptor.attributes[0].offset = 0;
+    _vertexDescriptor.attributes[0].bufferIndex = MetalBufferIndexVertex;
+    _vertexDescriptor.attributes[0].name = MDLVertexAttributePosition;
+    _vertexDescriptor.attributes[1].format = MDLVertexFormatFloat3;
+    _vertexDescriptor.attributes[1].offset = sizeof(float) * 3;
+    _vertexDescriptor.attributes[1].bufferIndex = MetalBufferIndexVertex;
+    _vertexDescriptor.attributes[1].name = MDLVertexAttributeNormal;
+    _vertexDescriptor.attributes[2].format = MDLVertexFormatFloat2;
+    _vertexDescriptor.attributes[2].offset = sizeof(float) * 6;
+    _vertexDescriptor.attributes[2].bufferIndex = MetalBufferIndexVertex;
+    _vertexDescriptor.attributes[2].name = MDLVertexAttributeTextureCoordinate;
+    _vertexDescriptor.layouts[0].stride = sizeof(float) * 8;
 }
 
 - (void)p_buildPipeline

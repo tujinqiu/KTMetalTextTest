@@ -7,11 +7,11 @@
 //
 
 #import "ViewController.h"
-#import "MetalRender.h"
+#import "MetalTextRender.h"
 
 @interface ViewController ()
 
-@property(nonatomic, strong) MetalRender *render;
+@property(nonatomic, strong) MetalTextRender *render;
 @property(nonatomic, strong) MTKView *mtkView;
 
 @end
@@ -26,7 +26,7 @@
     self.mtkView = [[MTKView alloc] initWithFrame:[UIScreen mainScreen].bounds device:device];
     [self.view addSubview:self.mtkView];
     
-    self.render = [[MetalRender alloc] initWithMTKView:self.mtkView];
+    self.render = [[MetalTextRender alloc] initWithMTKView:self.mtkView];
     [self.render mtkView:self.mtkView drawableSizeWillChange:self.mtkView.drawableSize];
 }
 

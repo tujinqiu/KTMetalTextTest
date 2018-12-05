@@ -7,7 +7,7 @@
 //
 
 #include <metal_stdlib>
-#include "MetalHeader.h"
+#include "MetalTextHeader.h"
 using namespace metal;
 
 typedef struct {
