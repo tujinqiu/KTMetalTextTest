@@ -11,6 +11,8 @@
 
 #import "MetalTextHeader.h"
 
+#define VERT_COMPONENT_COUNT 2 // 2D vertices (x, y)
+
 static inline MetalPathVertex MetalPathVertexMake(float x, float y)
 {
     MetalPathVertex v = {x, y};

@@ -9,23 +9,27 @@
 #import "MetalTextMesh.h"
 #import "tesselator.h"
 #import "MetalTextMeshHeader.h"
-#import <CoreText/CoreText.h>
 
 #define USE_ADAPTIVE_SUBDIVISION 1
 #define DEFAULT_QUAD_CURVE_SUBDIVISIONS 5
 
-static inline float lerp(float a, float b, float t)
-{
+typedef UInt32 MetalIndexType;
+
+static inline float lerp(float a, float b, float t) {
     return a + t * (b - a);
 }
 
-static inline CGPoint lerpPoints(CGPoint a, CGPoint b, float t)
-{
+static inline CGPoint lerpPoints(CGPoint a, CGPoint b, float t) {
     return CGPointMake(lerp(a.x, b.x, t), lerp(a.y, b.y, t));
 }
 
-static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
-{
+// Maps a value t in a range [a, b] to the range [c, d]
+static inline float remap(float a, float b, float c, float d, float t) {
+    float p = (t - a) / (b - a);
+    return c + p * (d - c);
+}
+
+static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t) {
     CGPoint q0 = CGPointMake(lerp(a.x, c.x, t), lerp(a.y, c.y, t));
     CGPoint q1 = CGPointMake(lerp(c.x, b.x, t), lerp(c.y, b.y, t));
     CGPoint r = CGPointMake(lerp(q0.x, q1.x, t), lerp(q0.y, q1.y, t));
@@ -34,71 +38,82 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
 
 @implementation MetalTextMesh
 
-+ (instancetype)meshWithText:(NSString *)text
-                        font:(UIFont *)font
-                       color:(UIColor *)color
-            vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
-             bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator
++ (MTKMesh *)meshWithString:(NSString *)string
+                       font:(CTFontRef)font
+             extrusionDepth:(CGFloat)extrusionDepth
+           vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
+            bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator
 {
-    NSDictionary *attributes = @{NSFontAttributeName : font,
-                                 NSForegroundColorAttributeName : color};
-    NSAttributedString *attrStr = [[NSAttributedString alloc] initWithString:text attributes:attributes];
+    // Create an attributed string from the provided text; we make our own attributed string
+    // to ensure that the entire mesh has a single style, which simplifies things greatly.
+    NSDictionary *attributes = @{ NSFontAttributeName : (__bridge id)font };
+    CFAttributedStringRef attributedString = CFAttributedStringCreate(NULL,
+                                                                      (__bridge CFStringRef)string,
+                                                                      (__bridge CFDictionaryRef)attributes);
     
+    // Transform the attributed string to a linked list of glyphs, each with an associated path from the specified font
     CGRect bounds;
-    MetalGlyph *glyphs = [self p_glyphsForAttributedString:attrStr imageBounds:&bounds];
+    MetalGlyph *glyphs = [self p_glyphsForAttributedString:attributedString imageBounds:&bounds];
+    
+    CFRelease(attributedString);
+    
+    // Flatten the paths associated with the glyphs so we can more easily tessellate them in the next step
     [self p_flattenPathsForGlyphs:glyphs];
+    
+    // Tessellate the glyphs into contours and actual mesh geometry
     [self p_tessellatePathsForGlyphs:glyphs];
-//    NSUInteger vertexCount = 0, indexCount = 0;
-//    [self p_calculateVertexCount:&vertexCount indexCount:&indexCount forGlyphs:glyphs];
-//    id<MDLMeshBuffer> vertexBuffer = [bufferAllocator newBuffer:vertexCount * sizeof(MetalMeshVertex)
-//                                                           type:MDLMeshBufferTypeVertex];
-//    id<MDLMeshBuffer> indexBuffer = [bufferAllocator newBuffer:indexCount * sizeof(UInt32)
-//                                                          type:MDLMeshBufferTypeIndex];
-//
-//    // Write text mesh geometry into the vertex and index buffers
-//    NSUInteger vertexBufferOffset = 0, indexBufferOffset = 0;
-//    [self writeVerticesForGlyphs:glyphs
-//                          bounds:bounds
-//                  extrusionDepth:extrusionDepth
-//                          buffer:vertexBuffer
-//                          offset:&vertexBufferOffset];
-//
-//    [self writeIndicesForGlyphs:glyphs
-//                         buffer:indexBuffer
-//                         offset:&indexBufferOffset];
-//
-//    GlyphListFree(glyphs);
-//
-//    // Use ModelIO to create a mesh object, then return a MetalKit mesh we can render later
-//    MDLSubmesh *submesh = [[MDLSubmesh alloc] initWithIndexBuffer:indexBuffer
-//                                                       indexCount:indexCount
-//                                                        indexType:MDLIndexBitDepthUInt32
-//                                                     geometryType:MDLGeometryTypeTriangles
-//                                                         material:nil];
-//    NSArray *submeshes = @[submesh];
-//    MDLMesh *mdlMesh = [self meshForVertexBuffer:vertexBuffer
-//                                     vertexCount:vertexCount
-//                                       submeshes:submeshes
-//                                vertexDescriptor:vertexDescriptor];
-//
-//    NSError *error = nil;
-//    MTKMesh *mesh = [[MTKMesh alloc] initWithMesh:mdlMesh device:bufferAllocator.device error:&error];
-//    if (error) {
-//        NSLog(@"Unable to create MTK mesh from MDL mesh");
-//    }
-//    return mesh;
+    
+    // Figure out how much space we need in our vertex and index buffers to accommodate the mesh
+    NSUInteger vertexCount = 0, indexCount = 0;
+    [self calculateVertexCount:&vertexCount indexCount:&indexCount forGlyphs:glyphs];
+    
+    // Allocate the vertex and index buffers
+    id<MDLMeshBuffer> vertexBuffer = [bufferAllocator newBuffer:vertexCount * sizeof(MetalMeshVertex)
+                                                           type:MDLMeshBufferTypeVertex];
+    id<MDLMeshBuffer> indexBuffer = [bufferAllocator newBuffer:indexCount * sizeof(MetalIndexType)
+                                                          type:MDLMeshBufferTypeIndex];
+    
+    // Write text mesh geometry into the vertex and index buffers
+    NSUInteger vertexBufferOffset = 0, indexBufferOffset = 0;
+    [self p_writeVerticesForGlyphs:glyphs
+                            bounds:bounds
+                    extrusionDepth:extrusionDepth
+                            buffer:vertexBuffer
+                            offset:&vertexBufferOffset];
+    
+    [self p_writeIndicesForGlyphs:glyphs
+                           buffer:indexBuffer
+                           offset:&indexBufferOffset];
+    
+    MetalGlyphListFree(glyphs);
+    
+    // Use ModelIO to create a mesh object, then return a MetalKit mesh we can render later
+    MDLSubmesh *submesh = [[MDLSubmesh alloc] initWithIndexBuffer:indexBuffer
+                                                       indexCount:indexCount
+                                                        indexType:MDLIndexBitDepthUInt32
+                                                     geometryType:MDLGeometryTypeTriangles
+                                                         material:nil];
+    NSArray *submeshes = @[submesh];
+    MDLMesh *mdlMesh = [self p_meshForVertexBuffer:vertexBuffer
+                                       vertexCount:vertexCount
+                                         submeshes:submeshes
+                                  vertexDescriptor:vertexDescriptor];
+    
+    NSError *error = nil;
+    MTKMesh *mesh = [[MTKMesh alloc] initWithMesh:mdlMesh device:bufferAllocator.device error:&error];
+    if (error) {
+        NSLog(@"Unable to create MTK mesh from MDL mesh");
+    }
+    return mesh;
 }
 
-#pragma mark - private
-
-+ (MetalGlyph *)p_glyphsForAttributedString:(NSAttributedString *)attributedString
++ (MetalGlyph *)p_glyphsForAttributedString:(CFAttributedStringRef)attributedString
                                 imageBounds:(CGRect *_Nullable)imageBounds
 {
     MetalGlyph *head = NULL, *tail = NULL;
     
     // Create a typesetter and use it to lay out a single line of text
-    CFAttributedStringRef cfAttrStr = (__bridge CFAttributedStringRef)attributedString;
-    CTTypesetterRef typesetter = CTTypesetterCreateWithAttributedString(cfAttrStr);
+    CTTypesetterRef typesetter = CTTypesetterCreateWithAttributedString(attributedString);
     CTLineRef line = CTTypesetterCreateLine(typesetter, CFRangeMake(0, 0));
     NSArray *runs = (__bridge NSArray *)CTLineGetGlyphRuns(line);
     
@@ -126,7 +141,8 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
         for (int glyphIdx = 0; glyphIdx < glyphCount; ++glyphIdx) {
             // Compute a transform that will position the glyph correctly relative to the others, accounting for centering
             CGPoint glyphPosition = glyphPositions[glyphIdx];
-            CGAffineTransform glyphTransform = CGAffineTransformMakeTranslation(glyphPosition.x - bounds.size.width / 2, glyphPosition.y);
+            CGAffineTransform glyphTransform = CGAffineTransformMakeTranslation(glyphPosition.x - bounds.size.width / 2,
+                                                                                glyphPosition.y);
             
             // Retrieve the actual path for this glyph from the font
             CGPathRef path = CTFontCreatePathForGlyph(font, glyphs[glyphIdx], &glyphTransform);
@@ -169,11 +185,13 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
         CGPathRef flattenedPath = [self p_newFlattenedPathForPath:glyph->path flatness:0.1];
         CFRelease(glyph->path);
         glyph->path = flattenedPath;
+        
         glyph = glyph->next;
     }
 }
 
-+ (CGPathRef)p_newFlattenedPathForPath:(CGPathRef)path flatness:(CGFloat)flatness
++ (CGPathRef)p_newFlattenedPathForPath:(CGPathRef)path
+                              flatness:(CGFloat)flatness
 {
     CGMutablePathRef flattenedPath = CGPathCreateMutable();
     // Iterate the elements in the path, converting curve segments into sequences of small line segments
@@ -249,43 +267,44 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
     // Create a new libtess tessellator, requesting constrained Delaunay triangulation
     TESStesselator *tess = tessNewTess(NULL);
     tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-
+    
     const int polygonIndexCount = 3; // triangles only
-
+    
     MetalGlyph *glyph = glyphs;
     while (glyph) {
         // Accumulate the contours of the flattened path into the tessellator so it can compute the CDT
         MetalPathContour *contours = [self p_tessellatePath:glyph->path usingTessellator:tess];
-
+        
         // Do the actual tessellation work
-        int result = tessTesselate(tess, TESS_WINDING_ODD, TESS_POLYGONS, polygonIndexCount, 2, NULL);
+        int result = tessTesselate(tess, TESS_WINDING_ODD, TESS_POLYGONS, polygonIndexCount, VERT_COMPONENT_COUNT, NULL);
         if (!result) {
             NSLog(@"Unable to tessellate path");
         }
-
+        
         // Retrieve the tessellated mesh from the tessellator and copy the contour list and geometry to the current glyph
         int vertexCount = tessGetVertexCount(tess);
         const TESSreal *vertices = tessGetVertices(tess);
         int indexCount = tessGetElementCount(tess) * polygonIndexCount;
         const TESSindex *indices = tessGetElements(tess);
-
+        
         glyph->contours = contours;
-
+        
         MetalGlyphSetGeometry(glyph, vertexCount, vertices, indexCount, indices);
-
+        
         glyph = glyph->next;
     }
-
+    
     tessDeleteTess(tess);
 }
 
-+ (MetalPathContour *)p_tessellatePath:(CGPathRef)path usingTessellator:(TESStesselator *)tessellator
++ (MetalPathContour *)p_tessellatePath:(CGPathRef)path
+                      usingTessellator:(TESStesselator *)tessellator
 {
     __block MetalPathContour *contour = MetalPathContourCreate();
     MetalPathContour *contours = contour;
     // Iterate the line segments in the flattened path, accumulating each subpath as a contour,
     // then pass closed contours to the tessellator
-    CGPathApplyWithBlock(path, ^(const CGPathElement *element) {
+    CGPathApplyWithBlock(path, ^(const CGPathElement *element){
         switch (element->type) {
             case kCGPathElementMoveToPoint: {
                 CGPoint point = element->points[0];
@@ -317,19 +336,19 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
     return contours;
 }
 
-+ (void)p_calculateVertexCount:(NSUInteger *)vertexBufferCount
-                    indexCount:(NSUInteger *)indexBufferCount
-                     forGlyphs:(MetalGlyph *)glyphs
++ (void)calculateVertexCount:(NSUInteger *)vertexBufferCount
+                  indexCount:(NSUInteger *)indexBufferCount
+                   forGlyphs:(MetalGlyph *)glyphs
 {
     *vertexBufferCount = 0;
     *indexBufferCount = 0;
-
+    
     MetalGlyph *glyph = glyphs;
     while (glyph) {
         // Space for front- and back-facing tessellated faces
         *vertexBufferCount += 2 * glyph->vertexCount;
         *indexBufferCount += 2 * glyph->indexCount;
-
+        
         MetalPathContour *contour = glyph->contours;
         // Space for stitching faces
         while (contour) {
@@ -341,78 +360,78 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
     }
 }
 
-+ (void)writeVerticesForGlyphs:(MetalGlyph *)glyphs
-                        bounds:(CGRect)bounds
-                extrusionDepth:(CGFloat)extrusionDepth
-                        buffer:(id<MDLMeshBuffer>)vertexBuffer
-                        offset:(NSUInteger *)offset
++ (void)p_writeVerticesForGlyphs:(MetalGlyph *)glyphs
+                          bounds:(CGRect)bounds
+                  extrusionDepth:(CGFloat)extrusionDepth
+                          buffer:(id<MDLMeshBuffer>)vertexBuffer
+                          offset:(NSUInteger *)offset
 {
     MDLMeshBufferMap *map = [vertexBuffer map];
-
+    
     // For each glyph, write two copies of the tessellated mesh into the vertex buffer,
     // one after the other. The first copy is for front-facing faces, and the second
     // copy is for rear-facing faces
     MetalGlyph *glyph = glyphs;
     while (glyph) {
         MetalMeshVertex *vertices = (MetalMeshVertex *)(map.bytes + *offset);
-
+        
         for (size_t i = 0, j = glyph->vertexCount; i < glyph->vertexCount; ++i, ++j) {
             float x = glyph->vertices[i * VERT_COMPONENT_COUNT + 0];
             float y = glyph->vertices[i * VERT_COMPONENT_COUNT + 1];
             float s = remap(CGRectGetMinX(bounds), CGRectGetMaxX(bounds), 0, 1, x);
             float t = remap(CGRectGetMinY(bounds), CGRectGetMaxY(bounds), 1, 0, y);
-
+            
             vertices[i].x = x;
             vertices[i].y = y;
             vertices[i].z = 0;
             vertices[i].s = s;
             vertices[i].t = t;
-
+            
             vertices[j].x = x;
             vertices[j].y = y;
             vertices[j].z = -extrusionDepth;
             vertices[j].s = s;
             vertices[j].t = t;
         }
-
-        *offset += glyph->vertexCount * 2 * sizeof(MeshVertex);
+        
+        *offset += glyph->vertexCount * 2 * sizeof(MetalMeshVertex);
         glyph = glyph->next;
     }
-
+    
     // Now, write two copies of the contour vertices into the vertex buffer. The first
     // set correspond to the front-facing faces, and the second copy correspond to the
     // rear-facing faces
     glyph = glyphs;
     while (glyph) {
-        PathContour *contour = glyph->contours;
+        MetalPathContour *contour = glyph->contours;
         while (contour) {
-            MeshVertex *vertices = (MeshVertex *)(map.bytes + *offset);
-
+            MetalMeshVertex *vertices = (MetalMeshVertex *)(map.bytes + *offset);
+            
             for (int i = 0, j = contour->vertexCount; i < contour->vertexCount; ++i, ++j) {
                 float x = contour->vertices[i].x;
                 float y = contour->vertices[i].y;
-
+                
                 float s = remap(CGRectGetMinX(bounds), CGRectGetMaxX(bounds), 0, 1, x);
                 float t = remap(CGRectGetMinY(bounds), CGRectGetMaxY(bounds), 1, 0, y);
-
+                
                 vertices[i].x = x;
                 vertices[i].y = y;
                 vertices[i].z = 0;
                 vertices[i].s = s;
                 vertices[i].t = t;
-
+                
                 vertices[j].x = x;
                 vertices[j].y = y;
                 vertices[j].z = -extrusionDepth;
                 vertices[j].s = s;
                 vertices[j].t = t;
             }
-
-            *offset += contour->vertexCount * 2 * sizeof(MeshVertex);
-
+            
+            *offset += contour->vertexCount * 2 * sizeof(MetalMeshVertex);
+            
             contour = contour->next;
         }
-
+        
         glyph = glyph->next;
     }
 }
@@ -422,13 +441,13 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
                          offset:(NSUInteger *)offset
 {
     MDLMeshBufferMap *indexMap = [indexBuffer map];
-
+    
     // Write indices for front-facing and back-facing faces
     MetalGlyph *glyph = glyphs;
     UInt32 baseVertex = 0;
     while (glyph) {
-        UInt32 *indices = (UInt32 *)(indexMap.bytes + *offset);
-
+        MetalIndexType *indices = (MetalIndexType *)(indexMap.bytes + *offset);
+        
         for (size_t i = 0, j = glyph->indexCount; i < glyph->indexCount; i += 3, j += 3) {
             // front face
             indices[i + 2] = glyph->indices[i + 0] + baseVertex;
@@ -439,27 +458,27 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
             indices[j + 1] = glyph->indices[i + 1] + baseVertex + glyph->vertexCount;
             indices[j + 2] = glyph->indices[i + 2] + baseVertex + glyph->vertexCount;
         }
-
-        *offset += glyph->indexCount * 2 * sizeof(IndexType);
-
+        
+        *offset += glyph->indexCount * 2 * sizeof(MetalIndexType);
+        
         baseVertex += glyph->vertexCount * 2;
-
+        
         glyph = glyph->next;
     }
-
+    
     // Write indices for stitching faces
     glyph = glyphs;
     while (glyph) {
-        PathContour *contour = glyph->contours;
+        MetalPathContour *contour = glyph->contours;
         while (contour) {
-            IndexType *indices = (IndexType *)(indexMap.bytes + *offset);
-
+            MetalIndexType *indices = (MetalIndexType *)(indexMap.bytes + *offset);
+            
             for (int i = 0; i < contour->vertexCount; ++i) {
                 int i0 = i;
                 int i1 = (i + 1) % contour->vertexCount;
                 int i2 = i + contour->vertexCount;
                 int i3 = (i + 1) % contour->vertexCount + contour->vertexCount;
-
+                
                 indices[i * 6 + 0] = i0 + baseVertex;
                 indices[i * 6 + 1] = i1 + baseVertex;
                 indices[i * 6 + 2] = i2 + baseVertex;
@@ -467,30 +486,30 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
                 indices[i * 6 + 4] = i3 + baseVertex;
                 indices[i * 6 + 5] = i2 + baseVertex;
             }
-
+            
             baseVertex += contour->vertexCount * 2;
-
-            *offset += contour->vertexCount * 6 * sizeof(IndexType);
-
+            
+            *offset += contour->vertexCount * 6 * sizeof(MetalIndexType);
+            
             contour = contour->next;
         }
-
+        
         glyph = glyph->next;
     }
 }
 
-+ (MDLMesh *)meshForVertexBuffer:(id<MDLMeshBuffer>)vertexBuffer
-                     vertexCount:(NSUInteger)vertexCount
-                       submeshes:(NSArray<MDLSubmesh *> *)submeshes
-                vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
++ (MDLMesh *)p_meshForVertexBuffer:(id<MDLMeshBuffer>)vertexBuffer
+                       vertexCount:(NSUInteger)vertexCount
+                         submeshes:(NSArray<MDLSubmesh *> *)submeshes
+                  vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
 {
     MDLMesh *mdlMesh = [[MDLMesh alloc] initWithVertexBuffer:vertexBuffer
                                                  vertexCount:vertexCount
                                                   descriptor:vertexDescriptor
                                                    submeshes:submeshes];
-
+    
     [mdlMesh addNormalsWithAttributeNamed:MDLVertexAttributeNormal creaseThreshold:sqrt(2)/2];
-
+    
     return mdlMesh;
 }
 
