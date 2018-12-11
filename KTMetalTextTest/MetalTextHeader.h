@@ -25,4 +25,9 @@ typedef enum {
     MetalBufferIndexUniforms = 1
 }MetalBufferIndex;
 
+typedef struct {
+    float x;
+    float y;
+}MetalPathVertex;
+
 #endif /* MetalTextHeader_h */

@@ -45,6 +45,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E315688F21BA3AE200C2D49F /* MetalTextMeshHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalTextMeshHeader.h; sourceTree = "<group>"; };
 		E3610D6221B79C7200D1F119 /* tesselator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tesselator.h; sourceTree = "<group>"; };
 		E3610D6421B79C7200D1F119 /* dict.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dict.c; sourceTree = "<group>"; };
 		E3610D6521B79C7200D1F119 /* tess.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tess.h; sourceTree = "<group>"; };
@@ -179,6 +180,7 @@
 				E369AF4B21B6C6C10049EB9B /* MetalTextHeader.h */,
 				E369AF3021B6C5DB0049EB9B /* MetalTextRender.h */,
 				E369AF3121B6C5DB0049EB9B /* MetalTextRender.m */,
+				E315688F21BA3AE200C2D49F /* MetalTextMeshHeader.h */,
 				E3610D7921B79D6000D1F119 /* MetalTextMesh.h */,
 				E3610D7A21B79D6000D1F119 /* MetalTextMesh.m */,
 				E369AF0221B6ACEE0049EB9B /* Main.storyboard */,
