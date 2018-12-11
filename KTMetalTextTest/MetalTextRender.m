@@ -69,15 +69,15 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
     _vertexDescriptor = [MDLVertexDescriptor new];
     _vertexDescriptor.attributes[0].format = MDLVertexFormatFloat3;
     _vertexDescriptor.attributes[0].offset = 0;
-    _vertexDescriptor.attributes[0].bufferIndex = MetalBufferIndexVertex;
+    _vertexDescriptor.attributes[0].bufferIndex = 0;
     _vertexDescriptor.attributes[0].name = MDLVertexAttributePosition;
     _vertexDescriptor.attributes[1].format = MDLVertexFormatFloat3;
     _vertexDescriptor.attributes[1].offset = sizeof(float) * 3;
-    _vertexDescriptor.attributes[1].bufferIndex = MetalBufferIndexVertex;
+    _vertexDescriptor.attributes[1].bufferIndex = 0;
     _vertexDescriptor.attributes[1].name = MDLVertexAttributeNormal;
     _vertexDescriptor.attributes[2].format = MDLVertexFormatFloat2;
     _vertexDescriptor.attributes[2].offset = sizeof(float) * 6;
-    _vertexDescriptor.attributes[2].bufferIndex = MetalBufferIndexVertex;
+    _vertexDescriptor.attributes[2].bufferIndex = 0;
     _vertexDescriptor.attributes[2].name = MDLVertexAttributeTextureCoordinate;
     _vertexDescriptor.layouts[0].stride = sizeof(float) * 8;
 }
@@ -143,8 +143,8 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 
 - (matrix_float4x4)p_getModelViewMatrix
 {
-    GLKMatrix4 matrix1 = GLKMatrix4MakeRotation(_rotation, 1, 1, 0);
-    GLKMatrix4 matrix2 = GLKMatrix4MakeScale(0.02, 0.02, 0.02);
+    GLKMatrix4 matrix1 = GLKMatrix4MakeRotation(_rotation, 0, 1, 0);
+    GLKMatrix4 matrix2 = GLKMatrix4MakeScale(0.01, 0.01, 0.01);
     GLKMatrix4 modelMatrix = GLKMatrix4Multiply(matrix1, matrix2);
     GLKMatrix4 viewMatrix = GLKMatrix4MakeTranslation(0, 0, -8.0);
     GLKMatrix4 matrix = GLKMatrix4Multiply(viewMatrix, modelMatrix);
@@ -160,7 +160,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
     memcpy(contents, &_uniforms, sizeof(MetalUniforms));
     
     NSTimeInterval timestep = (self.mtkView.preferredFramesPerSecond > 0) ? 1.0 / self.mtkView.preferredFramesPerSecond : 1.0 / 60;
-    _rotation += timestep;
+    _rotation += timestep * 0.5;
 }
 
 - (void)p_render
@@ -184,6 +184,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
         [renderEncoder setRenderPipelineState:self.renderPipelineState];
         [renderEncoder setDepthStencilState:self.depthStencilState];
         
+        [renderEncoder setVertexBuffer:self.uniformsBuffer offset:0 atIndex:MetalBufferIndexUniforms];
         int i = 0;
         for (MTKMeshBuffer *vertexBuffer in self.textMesh.vertexBuffers) {
             if ([vertexBuffer isKindOfClass:[MTKMeshBuffer class]]) {
@@ -191,7 +192,6 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
                 i++;
             }
         }
-        [renderEncoder setVertexBuffer:self.uniformsBuffer offset:0 atIndex:MetalBufferIndexUniforms];
         [renderEncoder setFragmentTexture:self.texture atIndex:MetalFragmentTextureIndex];
         
         for(MTKSubmesh *submesh in self.textMesh.submeshes) {
