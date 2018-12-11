@@ -13,15 +13,9 @@
 
 @interface MetalTextMesh : NSObject
 
-//+ (instancetype)meshWithText:(NSString *)text
-//                        font:(UIFont *)font
-//                       color:(UIColor *)color
-//            vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
-//             bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator;
-
 + (MTKMesh *)meshWithString:(NSString *)string
                        font:(UIFont *)font
-             extrusionDepth:(CGFloat)depth
+                      color:(UIColor *)color
            vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
             bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator;
 

@@ -27,7 +27,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 @interface MetalTextRender ()
 {
     MetalUniforms _uniforms;
-    float _rotation;
+    matrix_float4x4 _projectionMatrix;
 }
 
 @property(nonatomic, weak) MTKView *mtkView;
@@ -36,7 +36,6 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 @property(nonatomic, strong) id<MTLRenderPipelineState> renderPipelineState;
 @property(nonatomic, strong) id<MTLDepthStencilState> depthStencilState;
 @property(nonatomic, strong) id<MTLBuffer> uniformsBuffer;
-@property(nonatomic, strong) id<MTLTexture> texture;
 
 @property(nonatomic, strong) dispatch_semaphore_t frameBoundarySemaphore;
 
@@ -58,7 +57,6 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
         [self p_setupVertexDescriptor];
         [self p_buildPipeline];
         [self p_setupBuffers];
-        [self p_loadTexture];
     }
     
     return self;
@@ -67,19 +65,15 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 - (void)p_setupVertexDescriptor
 {
     _vertexDescriptor = [MDLVertexDescriptor new];
-    _vertexDescriptor.attributes[0].format = MDLVertexFormatFloat3;
+    _vertexDescriptor.attributes[0].format = MDLVertexFormatFloat2;
     _vertexDescriptor.attributes[0].offset = 0;
     _vertexDescriptor.attributes[0].bufferIndex = 0;
     _vertexDescriptor.attributes[0].name = MDLVertexAttributePosition;
-    _vertexDescriptor.attributes[1].format = MDLVertexFormatFloat3;
-    _vertexDescriptor.attributes[1].offset = sizeof(float) * 3;
+    _vertexDescriptor.attributes[1].format = MDLVertexFormatFloat4;
+    _vertexDescriptor.attributes[1].offset = sizeof(float) * 2;
     _vertexDescriptor.attributes[1].bufferIndex = 0;
-    _vertexDescriptor.attributes[1].name = MDLVertexAttributeNormal;
-    _vertexDescriptor.attributes[2].format = MDLVertexFormatFloat2;
-    _vertexDescriptor.attributes[2].offset = sizeof(float) * 6;
-    _vertexDescriptor.attributes[2].bufferIndex = 0;
-    _vertexDescriptor.attributes[2].name = MDLVertexAttributeTextureCoordinate;
-    _vertexDescriptor.layouts[0].stride = sizeof(float) * 8;
+    _vertexDescriptor.attributes[1].name = MDLVertexAttributeColor;
+    _vertexDescriptor.layouts[0].stride = sizeof(float) * 6;
 }
 
 - (void)p_buildPipeline
@@ -116,50 +110,22 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
     UIFont *font = [UIFont fontWithName:@"HoeflerText-Black" size:72];
     MTKMesh *textMesh = [MetalTextMesh meshWithString:@"测试数据"
                                                  font:font
-                                       extrusionDepth:16.0
+                                                color:[UIColor redColor]
                                      vertexDescriptor:self.vertexDescriptor
                                       bufferAllocator:bufferAllocator];
     self.textMesh = textMesh;
     
-    matrix_float4x4 modelViewMatrix = [self p_getModelViewMatrix];
-    _uniforms.modelViewMatrix = modelViewMatrix;
+    matrix_float4x4 modelViewMatrix = s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4MakeScale(0.015, 0.015, 0.015));
+    _uniforms.mvpMatrix = matrix_multiply(_projectionMatrix, modelViewMatrix);
     self.uniformsBuffer = [self.device newBufferWithBytes:&_uniforms length:sizeof(MetalUniforms) options:MTLResourceStorageModeShared];
-}
-
-- (void)p_loadTexture
-{
-    NSError *error;
-    MTKTextureLoader *textureLoader = [[MTKTextureLoader alloc] initWithDevice:self.device];
-    NSDictionary *textureLoaderOptions = @{MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageShaderRead), MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate)};
-    UIImage *image = [UIImage imageNamed:@"wood.jpg"];
-    self.texture = [textureLoader newTextureWithCGImage:image.CGImage
-                                                options:textureLoaderOptions
-                                                  error:&error];
-    if (!self.texture) {
-        NSLog(@"Error creating texture %@", error.localizedDescription);
-    }
-}
-
-- (matrix_float4x4)p_getModelViewMatrix
-{
-    GLKMatrix4 matrix1 = GLKMatrix4MakeRotation(_rotation, 0, 1, 0);
-    GLKMatrix4 matrix2 = GLKMatrix4MakeScale(0.015, 0.015, 0.015);
-    GLKMatrix4 modelMatrix = GLKMatrix4Multiply(matrix1, matrix2);
-    GLKMatrix4 viewMatrix = GLKMatrix4MakeTranslation(0, 0, -8.0);
-    GLKMatrix4 matrix = GLKMatrix4Multiply(viewMatrix, modelMatrix);
-    
-    return s_getMatrixFloat4x4FromGlMatrix4(matrix);
 }
 
 - (void)p_updateUniforms
 {
-    matrix_float4x4 modelViewMatrix = [self p_getModelViewMatrix];
-    _uniforms.modelViewMatrix = modelViewMatrix;
+    matrix_float4x4 modelViewMatrix = s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4MakeScale(0.015, 0.015, 0.015));
+    _uniforms.mvpMatrix = matrix_multiply(_projectionMatrix, modelViewMatrix);
     void *contents = [self.uniformsBuffer contents];
     memcpy(contents, &_uniforms, sizeof(MetalUniforms));
-    
-    NSTimeInterval timestep = (self.mtkView.preferredFramesPerSecond > 0) ? 1.0 / self.mtkView.preferredFramesPerSecond : 1.0 / 60;
-    _rotation += timestep * 0.5;
 }
 
 - (void)p_render
@@ -192,7 +158,6 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
                 i++;
             }
         }
-        [renderEncoder setFragmentTexture:self.texture atIndex:MetalFragmentTextureIndex];
         
         for(MTKSubmesh *submesh in self.textMesh.submeshes) {
             [renderEncoder drawIndexedPrimitives:submesh.primitiveType
@@ -219,8 +184,8 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size
 {
     float aspect = (float)size.width / (float)size.height;
-    GLKMatrix4 matrix = GLKMatrix4MakePerspective(65.0f * (M_PI / 180.0f), aspect, 0.1f, 100.f);
-    _uniforms.projectionMatrix = s_getMatrixFloat4x4FromGlMatrix4(matrix);
+    GLKMatrix4 matrix = GLKMatrix4MakeScale(1.0, aspect, 1.0);
+    _projectionMatrix = s_getMatrixFloat4x4FromGlMatrix4(matrix);
 }
 
 @end

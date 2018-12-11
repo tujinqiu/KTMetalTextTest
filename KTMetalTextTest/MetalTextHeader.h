@@ -12,24 +12,18 @@
 #include <simd/simd.h>
 
 typedef struct MetalMeshVertex {
-    float x, y, z;
-    float nx, ny, nz;
-    float s, t;
+    float x, y;
+    vector_float4 color;
 }MetalMeshVertex;
 
 typedef struct {
-    matrix_float4x4 modelViewMatrix;
-    matrix_float4x4 projectionMatrix;
+    matrix_float4x4 mvpMatrix;
 }MetalUniforms;
 
 typedef enum {
     MetalBufferIndexVertex = 0,
     MetalBufferIndexUniforms = 1,
 }MetalBufferIndex;
-
-typedef enum {
-    MetalFragmentTextureIndex = 0,
-}MetalFragmentIndex;
 
 typedef struct {
     float x;

@@ -147,7 +147,7 @@ static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
 
 + (MTKMesh *)meshWithString:(NSString *)string
                        font:(UIFont *)font
-             extrusionDepth:(CGFloat)extrusionDepth
+                      color:(UIColor *)color
            vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
             bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator
 {
@@ -157,10 +157,12 @@ static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
     CFAttributedStringRef attributedString = CFAttributedStringCreate(NULL,
                                                                       (__bridge CFStringRef)string,
                                                                       (__bridge CFDictionaryRef)attributes);
+    CGFloat r, g, b, a = 0;
+    [color getRed:&r green:&g blue:&b alpha:&a];
+    vector_float4 colorVec = simd_make_float4(r, g, b, a);
     
     // Transform the attributed string to a linked list of glyphs, each with an associated path from the specified font
-    CGRect bounds;
-    MetalGlyph *glyphs = [self p_glyphsForAttributedString:attributedString imageBounds:&bounds];
+    MetalGlyph *glyphs = [self p_glyphsForAttributedString:attributedString];
     
     CFRelease(attributedString);
     
@@ -183,10 +185,9 @@ static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
     // Write text mesh geometry into the vertex and index buffers
     NSUInteger vertexBufferOffset = 0, indexBufferOffset = 0;
     [self p_writeVerticesForGlyphs:glyphs
-                            bounds:bounds
-                    extrusionDepth:extrusionDepth
                             buffer:vertexBuffer
-                            offset:&vertexBufferOffset];
+                            offset:&vertexBufferOffset
+                             color:colorVec];
     
     [self p_writeIndicesForGlyphs:glyphs
                            buffer:indexBuffer
@@ -215,7 +216,6 @@ static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
 }
 
 + (MetalGlyph *)p_glyphsForAttributedString:(CFAttributedStringRef)attributedString
-                                imageBounds:(CGRect *_Nullable)imageBounds
 {
     MetalGlyph *head = NULL, *tail = NULL;
     
@@ -268,10 +268,6 @@ static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
             }
             
             tail->path = path;
-        }
-        
-        if (imageBounds) {
-            *imageBounds = bounds;
         }
         
         free(glyphPositions);
@@ -416,93 +412,32 @@ static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
     
     MetalGlyph *glyph = glyphs;
     while (glyph) {
-        // Space for front- and back-facing tessellated faces
-        *vertexBufferCount += 2 * glyph->vertexCount;
-        *indexBufferCount += 2 * glyph->indexCount;
+        *vertexBufferCount += glyph->vertexCount;
+        *indexBufferCount += glyph->indexCount;
         
-        MetalPathContour *contour = glyph->contours;
-        // Space for stitching faces
-        while (contour) {
-            *vertexBufferCount += 2 * contour->vertexCount;
-            *indexBufferCount += 6 * (contour->vertexCount + 1);
-            contour = contour->next;
-        }
         glyph = glyph->next;
     }
 }
 
 + (void)p_writeVerticesForGlyphs:(MetalGlyph *)glyphs
-                          bounds:(CGRect)bounds
-                  extrusionDepth:(CGFloat)extrusionDepth
                           buffer:(id<MDLMeshBuffer>)vertexBuffer
                           offset:(NSUInteger *)offset
+                           color:(vector_float4)color
 {
     MDLMeshBufferMap *map = [vertexBuffer map];
     
-    // For each glyph, write two copies of the tessellated mesh into the vertex buffer,
-    // one after the other. The first copy is for front-facing faces, and the second
-    // copy is for rear-facing faces
     MetalGlyph *glyph = glyphs;
     while (glyph) {
         MetalMeshVertex *vertices = (MetalMeshVertex *)(map.bytes + *offset);
-        
-        for (size_t i = 0, j = glyph->vertexCount; i < glyph->vertexCount; ++i, ++j) {
+        for (size_t i = 0; i < glyph->vertexCount; ++i) {
             float x = glyph->vertices[i * VERT_COMPONENT_COUNT + 0];
             float y = glyph->vertices[i * VERT_COMPONENT_COUNT + 1];
-            float s = s_remap(CGRectGetMinX(bounds), CGRectGetMaxX(bounds), 0, 1, x);
-            float t = s_remap(CGRectGetMinY(bounds), CGRectGetMaxY(bounds), 1, 0, y);
             
             vertices[i].x = x;
             vertices[i].y = y;
-            vertices[i].z = 0;
-            vertices[i].s = s;
-            vertices[i].t = t;
-            
-            vertices[j].x = x;
-            vertices[j].y = y;
-            vertices[j].z = -extrusionDepth;
-            vertices[j].s = s;
-            vertices[j].t = t;
+            vertices[i].color = color;
         }
-        
-        *offset += glyph->vertexCount * 2 * sizeof(MetalMeshVertex);
-        glyph = glyph->next;
-    }
-    
-    // Now, write two copies of the contour vertices into the vertex buffer. The first
-    // set correspond to the front-facing faces, and the second copy correspond to the
-    // rear-facing faces
-    glyph = glyphs;
-    while (glyph) {
-        MetalPathContour *contour = glyph->contours;
-        while (contour) {
-            MetalMeshVertex *vertices = (MetalMeshVertex *)(map.bytes + *offset);
-            
-            for (int i = 0, j = contour->vertexCount; i < contour->vertexCount; ++i, ++j) {
-                float x = contour->vertices[i].x;
-                float y = contour->vertices[i].y;
-                
-                float s = s_remap(CGRectGetMinX(bounds), CGRectGetMaxX(bounds), 0, 1, x);
-                float t = s_remap(CGRectGetMinY(bounds), CGRectGetMaxY(bounds), 1, 0, y);
-                
-                vertices[i].x = x;
-                vertices[i].y = y;
-                vertices[i].z = 0;
-                vertices[i].s = s;
-                vertices[i].t = t;
-                
-                vertices[j].x = x;
-                vertices[j].y = y;
-                vertices[j].z = -extrusionDepth;
-                vertices[j].s = s;
-                vertices[j].t = t;
-            }
-            
-            *offset += contour->vertexCount * 2 * sizeof(MetalMeshVertex);
-            
-            contour = contour->next;
-        }
-        
+        *offset += glyph->vertexCount * sizeof(MetalMeshVertex);
         glyph = glyph->next;
     }
 }
@@ -513,57 +448,17 @@ static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
 {
     MDLMeshBufferMap *indexMap = [indexBuffer map];
     
-    // Write indices for front-facing and back-facing faces
     MetalGlyph *glyph = glyphs;
     UInt32 baseVertex = 0;
     while (glyph) {
         MetalIndexType *indices = (MetalIndexType *)(indexMap.bytes + *offset);
-        
-        for (size_t i = 0, j = glyph->indexCount; i < glyph->indexCount; i += 3, j += 3) {
-            // front face
+        for (size_t i = 0; i < glyph->indexCount; i += 3) {
             indices[i + 2] = glyph->indices[i + 0] + baseVertex;
             indices[i + 1] = glyph->indices[i + 1] + baseVertex;
             indices[i + 0] = glyph->indices[i + 2] + baseVertex;
-            // rear face
-            indices[j + 0] = glyph->indices[i + 0] + baseVertex + glyph->vertexCount;
-            indices[j + 1] = glyph->indices[i + 1] + baseVertex + glyph->vertexCount;
-            indices[j + 2] = glyph->indices[i + 2] + baseVertex + glyph->vertexCount;
         }
-        
         *offset += glyph->indexCount * 2 * sizeof(MetalIndexType);
-        
         baseVertex += glyph->vertexCount * 2;
-        
-        glyph = glyph->next;
-    }
-    
-    // Write indices for stitching faces
-    glyph = glyphs;
-    while (glyph) {
-        MetalPathContour *contour = glyph->contours;
-        while (contour) {
-            MetalIndexType *indices = (MetalIndexType *)(indexMap.bytes + *offset);
-            
-            for (int i = 0; i < contour->vertexCount; ++i) {
-                int i0 = i;
-                int i1 = (i + 1) % contour->vertexCount;
-                int i2 = i + contour->vertexCount;
-                int i3 = (i + 1) % contour->vertexCount + contour->vertexCount;
-                
-                indices[i * 6 + 0] = i0 + baseVertex;
-                indices[i * 6 + 1] = i1 + baseVertex;
-                indices[i * 6 + 2] = i2 + baseVertex;
-                indices[i * 6 + 3] = i1 + baseVertex;
-                indices[i * 6 + 4] = i3 + baseVertex;
-                indices[i * 6 + 5] = i2 + baseVertex;
-            }
-            
-            baseVertex += contour->vertexCount * 2;
-            
-            *offset += contour->vertexCount * 6 * sizeof(MetalIndexType);
-            
-            contour = contour->next;
-        }
         
         glyph = glyph->next;
     }
