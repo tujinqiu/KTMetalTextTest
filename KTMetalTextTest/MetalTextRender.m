@@ -53,6 +53,8 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
         mtkView.delegate = self;
         _device = mtkView.device;
         _frameBoundarySemaphore = dispatch_semaphore_create(kMaxBuffersInFlight);
+        mtkView.depthStencilPixelFormat = MTLPixelFormatDepth32Float_Stencil8;
+        mtkView.colorPixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
         [self p_setupVertexDescriptor];
         [self p_buildPipeline];
         [self p_setupBuffers];
