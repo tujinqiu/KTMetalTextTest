@@ -15,27 +15,132 @@
 
 typedef UInt32 MetalIndexType;
 
-static inline float lerp(float a, float b, float t)
+static inline float s_lerp(float a, float b, float t)
 {
     return a + t * (b - a);
 }
 
-static inline CGPoint lerpPoints(CGPoint a, CGPoint b, float t)
+static inline CGPoint s_lerpPoints(CGPoint a, CGPoint b, float t)
 {
-    return CGPointMake(lerp(a.x, b.x, t), lerp(a.y, b.y, t));
+    return CGPointMake(s_lerp(a.x, b.x, t), s_lerp(a.y, b.y, t));
 }
 
 // Maps a value t in a range [a, b] to the range [c, d]
-static inline float remap(float a, float b, float c, float d, float t) {
+static inline float s_remap(float a, float b, float c, float d, float t)
+{
     float p = (t - a) / (b - a);
     return c + p * (d - c);
 }
 
-static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t) {
-    CGPoint q0 = CGPointMake(lerp(a.x, c.x, t), lerp(a.y, c.y, t));
-    CGPoint q1 = CGPointMake(lerp(c.x, b.x, t), lerp(c.y, b.y, t));
-    CGPoint r = CGPointMake(lerp(q0.x, q1.x, t), lerp(q0.y, q1.y, t));
-    return r;
+static inline CGPoint s_evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t)
+{
+    CGPoint q0 = s_lerpPoints(a, c, t);
+    CGPoint q1 = s_lerpPoints(c, b, t);
+    return s_lerpPoints(q0, q1, t);
+}
+
+static void s_flattenQuadCurvePath(CGMutablePathRef flattenedPath,
+                                   const CGPathElement *element,
+                                   CGFloat flatness)
+{
+#if USE_ADAPTIVE_SUBDIVISION
+    const int MAX_SUBDIVS = 20;
+    const CGPoint a = CGPathGetCurrentPoint(flattenedPath); // "from" point
+    const CGPoint b = element->points[1]; // "to" point
+    const CGPoint c = element->points[0]; // control point
+    const CGFloat tolSq = flatness * flatness; // maximum tolerable squared error
+    CGFloat t = 0; // Parameter of the curve up to which we've subdivided
+    CGFloat candT = 0.5; // "Candidate" parameter of the curve we're currently evaluating
+    CGPoint p = a; // Point along curve at parameter t
+    while (t < 1.0) {
+        int subdivs = 1;
+        CGFloat err = FLT_MAX; // Squared distance from midpoint of candidate segment to midpoint of true curve segment
+        CGPoint candP = p;
+        candT = fmin(1.0, t + 0.5);
+        while (err > tolSq) {
+            candP = s_evalQuadCurve(a, b, c, candT);
+            CGFloat midT = (t + candT) / 2;
+            CGPoint midCurve = s_evalQuadCurve(a, b, c, midT);
+            CGPoint midSeg = s_lerpPoints(p, candP, 0.5);
+            err = pow(midSeg.x - midCurve.x, 2) + pow(midSeg.y - midCurve.y, 2);
+            if (err > tolSq) {
+                candT = t + 0.5 * (candT - t);
+                if (++subdivs > MAX_SUBDIVS) {
+                    break;
+                }
+            }
+        }
+        t = candT;
+        p = candP;
+        CGPathAddLineToPoint(flattenedPath, NULL, p.x, p.y);
+    }
+#else
+    CGPoint a = CGPathGetCurrentPoint(flattenedPath);
+    CGPoint b = element->points[1];
+    CGPoint c = element->points[0];
+    for (int i = 0; i < DEFAULT_QUAD_CURVE_SUBDIVISIONS; ++i) {
+        float t = (float)i / (DEFAULT_QUAD_CURVE_SUBDIVISIONS - 1);
+        CGPoint r = s_evalQuadCurve(a, b, c, t);
+        CGPathAddLineToPoint(flattenedPath, NULL, r.x, r.y);
+    }
+#endif
+}
+
+static inline CGPoint s_evalCurve(CGPoint a, CGPoint b, CGPoint c1, CGPoint c2, CGFloat t)
+{
+    CGPoint q0 = s_lerpPoints(a, c1, t);
+    CGPoint q1 = s_lerpPoints(c1, c2, t);
+    CGPoint q2 = s_lerpPoints(c2, b, t);
+    return s_evalQuadCurve(q0, q2, q1, t);
+}
+
+static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
+                               const CGPathElement *element,
+                               CGFloat flatness)
+{
+#if USE_ADAPTIVE_SUBDIVISION
+    const int MAX_SUBDIVS = 20;
+    const CGPoint a = CGPathGetCurrentPoint(flattenedPath); // "from" point
+    const CGPoint b = element->points[2]; // "to" point
+    const CGPoint c1 = element->points[0]; // control point1
+    const CGPoint c2 = element->points[1]; // control point2
+    const CGFloat tolSq = flatness * flatness; // maximum tolerable squared error
+    CGFloat t = 0; // Parameter of the curve up to which we've subdivided
+    CGFloat candT = 0.5; // "Candidate" parameter of the curve we're currently evaluating
+    CGPoint p = a; // Point along curve at parameter t
+    while (t < 1.0) {
+        int subdivs = 1;
+        CGFloat err = FLT_MAX; // Squared distance from midpoint of candidate segment to midpoint of true curve segment
+        CGPoint candP = p;
+        candT = fmin(1.0, t + 0.5);
+        while (err > tolSq) {
+            candP = s_evalCurve(a, b, c1, c2, candT);
+            CGFloat midT = (t + candT) / 2;
+            CGPoint midCurve = s_evalCurve(a, b, c1, c2, midT);
+            CGPoint midSeg = s_lerpPoints(p, candP, 0.5);
+            err = pow(midSeg.x - midCurve.x, 2) + pow(midSeg.y - midCurve.y, 2);
+            if (err > tolSq) {
+                candT = t + 0.5 * (candT - t);
+                if (++subdivs > MAX_SUBDIVS) {
+                    break;
+                }
+            }
+        }
+        t = candT;
+        p = candP;
+        CGPathAddLineToPoint(flattenedPath, NULL, p.x, p.y);
+    }
+#else
+    CGPoint a = CGPathGetCurrentPoint(flattenedPath);
+    CGPoint b = element->points[2];
+    CGPoint c1 = element->points[0];
+    CGPoint c2 = element->points[1];
+    for (int i = 0; i < DEFAULT_QUAD_CURVE_SUBDIVISIONS; ++i) {
+        float t = (float)i / (DEFAULT_QUAD_CURVE_SUBDIVISIONS - 1);
+        CGPoint r = s_evalCurve(a, b, c1, c2, t);
+        CGPathAddLineToPoint(flattenedPath, NULL, r.x, r.y);
+    }
+#endif
 }
 
 @implementation MetalTextMesh
@@ -212,59 +317,19 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t) 
             }
                 
             case kCGPathElementAddCurveToPoint:
-                assert(!"Can't currently flatten font outlines containing cubic curve segments");
+                s_flattenCurvePath(flattenedPath, element, flatness);
                 break;
                 
-            case kCGPathElementAddQuadCurveToPoint: {
-#if USE_ADAPTIVE_SUBDIVISION
-                const int MAX_SUBDIVS = 20;
-                const CGPoint a = CGPathGetCurrentPoint(flattenedPath); // "from" point
-                const CGPoint b = element->points[1]; // "to" point
-                const CGPoint c = element->points[0]; // control point
-                const CGFloat tolSq = flatness * flatness; // maximum tolerable squared error
-                CGFloat t = 0; // Parameter of the curve up to which we've subdivided
-                CGFloat candT = 0.5; // "Candidate" parameter of the curve we're currently evaluating
-                CGPoint p = a; // Point along curve at parameter t
-                while (t < 1.0) {
-                    int subdivs = 1;
-                    CGFloat err = FLT_MAX; // Squared distance from midpoint of candidate segment to midpoint of true curve segment
-                    CGPoint candP = p;
-                    candT = fmin(1.0, t + 0.5);
-                    while (err > tolSq) {
-                        candP = evalQuadCurve(a, b, c, candT);
-                        CGFloat midT = (t + candT) / 2;
-                        CGPoint midCurve = evalQuadCurve(a, b, c, midT);
-                        CGPoint midSeg = lerpPoints(p, candP, 0.5);
-                        err = pow(midSeg.x - midCurve.x, 2) + pow(midSeg.y - midCurve.y, 2);
-                        if (err > tolSq) {
-                            candT = t + 0.5 * (candT - t);
-                            if (++subdivs > MAX_SUBDIVS) {
-                                break;
-                            }
-                        }
-                    }
-                    t = candT;
-                    p = candP;
-                    CGPathAddLineToPoint(flattenedPath, NULL, p.x, p.y);
-                }
-#else
-                CGPoint a = CGPathGetCurrentPoint(flattenedPath);
-                CGPoint b = element->points[1];
-                CGPoint c = element->points[0];
-                for (int i = 0; i < DEFAULT_QUAD_CURVE_SUBDIVISIONS; ++i) {
-                    float t = (float)i / (DEFAULT_QUAD_CURVE_SUBDIVISIONS - 1);
-                    CGPoint r = evalQuadCurve(a, b, c, t);
-                    CGPathAddLineToPoint(flattenedPath, NULL, r.x, r.y);
-                }
-#endif
+            case kCGPathElementAddQuadCurveToPoint:
+                s_flattenQuadCurvePath(flattenedPath, element, flatness);
                 break;
-            }
                 
             case kCGPathElementCloseSubpath:
                 CGPathCloseSubpath(flattenedPath);
                 break;
         }
     });
+    
     return flattenedPath;
 }
 
@@ -384,8 +449,8 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t) 
         for (size_t i = 0, j = glyph->vertexCount; i < glyph->vertexCount; ++i, ++j) {
             float x = glyph->vertices[i * VERT_COMPONENT_COUNT + 0];
             float y = glyph->vertices[i * VERT_COMPONENT_COUNT + 1];
-            float s = remap(CGRectGetMinX(bounds), CGRectGetMaxX(bounds), 0, 1, x);
-            float t = remap(CGRectGetMinY(bounds), CGRectGetMaxY(bounds), 1, 0, y);
+            float s = s_remap(CGRectGetMinX(bounds), CGRectGetMaxX(bounds), 0, 1, x);
+            float t = s_remap(CGRectGetMinY(bounds), CGRectGetMaxY(bounds), 1, 0, y);
             
             vertices[i].x = x;
             vertices[i].y = y;
@@ -417,8 +482,8 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t) 
                 float x = contour->vertices[i].x;
                 float y = contour->vertices[i].y;
                 
-                float s = remap(CGRectGetMinX(bounds), CGRectGetMaxX(bounds), 0, 1, x);
-                float t = remap(CGRectGetMinY(bounds), CGRectGetMaxY(bounds), 1, 0, y);
+                float s = s_remap(CGRectGetMinX(bounds), CGRectGetMaxX(bounds), 0, 1, x);
+                float t = s_remap(CGRectGetMinY(bounds), CGRectGetMaxY(bounds), 1, 0, y);
                 
                 vertices[i].x = x;
                 vertices[i].y = y;
