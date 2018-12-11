@@ -457,8 +457,8 @@ static void s_flattenCurvePath(CGMutablePathRef flattenedPath,
             indices[i + 1] = glyph->indices[i + 1] + baseVertex;
             indices[i + 0] = glyph->indices[i + 2] + baseVertex;
         }
-        *offset += glyph->indexCount * 2 * sizeof(MetalIndexType);
-        baseVertex += glyph->vertexCount * 2;
+        *offset += glyph->indexCount * sizeof(MetalIndexType);
+        baseVertex += glyph->vertexCount;
         
         glyph = glyph->next;
     }
