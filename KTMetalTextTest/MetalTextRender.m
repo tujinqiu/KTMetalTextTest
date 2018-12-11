@@ -114,7 +114,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 {
     MTKMeshBufferAllocator *bufferAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:self.device];
     CTFontRef font = CTFontCreateWithName((__bridge CFStringRef)@"HoeflerText-Black", 72, NULL);
-    MTKMesh *textMesh = [MetalTextMesh meshWithString:@"这是测试"
+    MTKMesh *textMesh = [MetalTextMesh meshWithString:@"hello, world"
                                                  font:font
                                        extrusionDepth:16.0
                                      vertexDescriptor:self.vertexDescriptor
@@ -132,11 +132,10 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
     NSError *error;
     MTKTextureLoader* textureLoader = [[MTKTextureLoader alloc] initWithDevice:_device];
     NSDictionary *textureLoaderOptions = @{MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageShaderRead), MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate)};
-    self.texture = [textureLoader newTextureWithName:@"wood"
-                                         scaleFactor:1.0
-                                              bundle:nil
-                                             options:textureLoaderOptions
-                                               error:&error];
+    UIImage *image = [UIImage imageNamed:@"wood.jpg"];
+    self.texture = [textureLoader newTextureWithCGImage:image.CGImage
+                                                options:textureLoaderOptions
+                                                  error:&error];
     if (!self.texture) {
         NSLog(@"Error creating texture %@", error.localizedDescription);
     }
@@ -185,16 +184,14 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
         [renderEncoder setRenderPipelineState:self.renderPipelineState];
         [renderEncoder setDepthStencilState:self.depthStencilState];
         
-        [renderEncoder setVertexBuffer:self.uniformsBuffer offset:0 atIndex:MetalBufferIndexUniforms];
-        
         int i = 0;
         for (MTKMeshBuffer *vertexBuffer in self.textMesh.vertexBuffers) {
             if ([vertexBuffer isKindOfClass:[MTKMeshBuffer class]]) {
-                [renderEncoder setVertexBuffer:vertexBuffer.buffer offset:vertexBuffer.offset atIndex:MetalBufferIndexUniforms + i];
+                [renderEncoder setVertexBuffer:vertexBuffer.buffer offset:vertexBuffer.offset atIndex:MetalBufferIndexVertex + i];
                 i++;
             }
         }
-        
+        [renderEncoder setVertexBuffer:self.uniformsBuffer offset:0 atIndex:MetalBufferIndexUniforms];
         [renderEncoder setFragmentTexture:self.texture atIndex:MetalFragmentTextureIndex];
         
         for(MTKSubmesh *submesh in self.textMesh.submeshes) {

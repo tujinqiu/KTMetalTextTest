@@ -24,6 +24,8 @@
     
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     self.mtkView = [[MTKView alloc] initWithFrame:[UIScreen mainScreen].bounds device:device];
+    self.mtkView.sampleCount = 4;
+    self.mtkView.clearColor = MTLClearColorMake(0.5, 0.5, 0.5, 1.0);
     [self.view addSubview:self.mtkView];
     
     self.render = [[MetalTextRender alloc] initWithMTKView:self.mtkView];

@@ -23,8 +23,8 @@ typedef struct {
 }MetalUniforms;
 
 typedef enum {
-    MetalBufferIndexUniforms = 0,
-    MetalBufferIndexVertex = 1,
+    MetalBufferIndexVertex = 0,
+    MetalBufferIndexUniforms = 1,
 }MetalBufferIndex;
 
 typedef enum {
