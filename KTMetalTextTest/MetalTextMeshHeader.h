@@ -11,7 +11,7 @@
 
 #import "MetalTextHeader.h"
 
-static inline MetalPathVertex s_MetalPathVertexMake(float x, float y)
+static inline MetalPathVertex MetalPathVertexMake(float x, float y)
 {
     MetalPathVertex v = {x, y};
     return v;
@@ -78,7 +78,7 @@ typedef struct MetalGlyph {
     struct MetalGlyph *next;
 }MetalGlyph;
 
-static inline MetalGlyph *GlyphCreate()
+static inline MetalGlyph *MetalGlyphCreate()
 {
     MetalGlyph *glyph = (MetalGlyph *)malloc(sizeof(MetalGlyph));
     bzero(glyph, sizeof(MetalGlyph));
