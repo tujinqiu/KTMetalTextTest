@@ -182,6 +182,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
         [renderEncoder setCullMode:MTLCullModeBack];
         [renderEncoder setRenderPipelineState:self.renderPipelineState];
         [renderEncoder setDepthStencilState:self.depthStencilState];
+        [renderEncoder setTriangleFillMode:MTLTriangleFillModeLines];
         
         [renderEncoder setVertexBuffer:self.uniformsBuffer offset:0 atIndex:MetalBufferIndexUniforms];
         int i = 0;
