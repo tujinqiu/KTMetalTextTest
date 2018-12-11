@@ -10,16 +10,18 @@
 #import "tesselator.h"
 #import "MetalTextMeshHeader.h"
 
-#define USE_ADAPTIVE_SUBDIVISION 1
+#define USE_ADAPTIVE_SUBDIVISION 0
 #define DEFAULT_QUAD_CURVE_SUBDIVISIONS 5
 
 typedef UInt32 MetalIndexType;
 
-static inline float lerp(float a, float b, float t) {
+static inline float lerp(float a, float b, float t)
+{
     return a + t * (b - a);
 }
 
-static inline CGPoint lerpPoints(CGPoint a, CGPoint b, float t) {
+static inline CGPoint lerpPoints(CGPoint a, CGPoint b, float t)
+{
     return CGPointMake(lerp(a.x, b.x, t), lerp(a.y, b.y, t));
 }
 
@@ -202,14 +204,17 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t) 
                 CGPathMoveToPoint(flattenedPath, NULL, point.x, point.y);
                 break;
             }
+                
             case kCGPathElementAddLineToPoint: {
                 CGPoint point = element->points[0];
                 CGPathAddLineToPoint(flattenedPath, NULL, point.x, point.y);
                 break;
             }
+                
             case kCGPathElementAddCurveToPoint:
                 assert(!"Can't currently flatten font outlines containing cubic curve segments");
                 break;
+                
             case kCGPathElementAddQuadCurveToPoint: {
 #if USE_ADAPTIVE_SUBDIVISION
                 const int MAX_SUBDIVS = 20;
@@ -254,6 +259,7 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t) 
 #endif
                 break;
             }
+                
             case kCGPathElementCloseSubpath:
                 CGPathCloseSubpath(flattenedPath);
                 break;

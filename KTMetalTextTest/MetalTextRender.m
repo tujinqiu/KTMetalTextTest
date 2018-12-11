@@ -113,8 +113,9 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 - (void)p_setupBuffers
 {
     MTKMeshBufferAllocator *bufferAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:self.device];
+    UIFont *font = [UIFont fontWithName:@"HoeflerText-Black" size:72];
     MTKMesh *textMesh = [MetalTextMesh meshWithString:@"hello, world"
-                                                 font:[UIFont systemFontOfSize:72]
+                                                 font:font
                                        extrusionDepth:16.0
                                      vertexDescriptor:self.vertexDescriptor
                                       bufferAllocator:bufferAllocator];
