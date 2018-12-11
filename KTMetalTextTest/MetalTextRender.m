@@ -113,13 +113,11 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 - (void)p_setupBuffers
 {
     MTKMeshBufferAllocator *bufferAllocator = [[MTKMeshBufferAllocator alloc] initWithDevice:self.device];
-    CTFontRef font = CTFontCreateWithName((__bridge CFStringRef)@"HoeflerText-Black", 72, NULL);
     MTKMesh *textMesh = [MetalTextMesh meshWithString:@"hello, world"
-                                                 font:font
+                                                 font:[UIFont systemFontOfSize:72]
                                        extrusionDepth:16.0
                                      vertexDescriptor:self.vertexDescriptor
                                       bufferAllocator:bufferAllocator];
-    CFRelease(font);
     self.textMesh = textMesh;
     
     matrix_float4x4 modelViewMatrix = [self p_getModelViewMatrix];
@@ -130,7 +128,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 - (void)p_loadTexture
 {
     NSError *error;
-    MTKTextureLoader* textureLoader = [[MTKTextureLoader alloc] initWithDevice:_device];
+    MTKTextureLoader *textureLoader = [[MTKTextureLoader alloc] initWithDevice:self.device];
     NSDictionary *textureLoaderOptions = @{MTKTextureLoaderOptionTextureUsage : @(MTLTextureUsageShaderRead), MTKTextureLoaderOptionTextureStorageMode : @(MTLStorageModePrivate)};
     UIImage *image = [UIImage imageNamed:@"wood.jpg"];
     self.texture = [textureLoader newTextureWithCGImage:image.CGImage
@@ -144,7 +142,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 - (matrix_float4x4)p_getModelViewMatrix
 {
     GLKMatrix4 matrix1 = GLKMatrix4MakeRotation(_rotation, 0, 1, 0);
-    GLKMatrix4 matrix2 = GLKMatrix4MakeScale(0.01, 0.01, 0.01);
+    GLKMatrix4 matrix2 = GLKMatrix4MakeScale(0.015, 0.015, 0.015);
     GLKMatrix4 modelMatrix = GLKMatrix4Multiply(matrix1, matrix2);
     GLKMatrix4 viewMatrix = GLKMatrix4MakeTranslation(0, 0, -8.0);
     GLKMatrix4 matrix = GLKMatrix4Multiply(viewMatrix, modelMatrix);

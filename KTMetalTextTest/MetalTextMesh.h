@@ -20,7 +20,7 @@
 //             bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator;
 
 + (MTKMesh *)meshWithString:(NSString *)string
-                       font:(CTFontRef)font
+                       font:(UIFont *)font
              extrusionDepth:(CGFloat)depth
            vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
             bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator;

@@ -39,14 +39,14 @@ static inline CGPoint evalQuadCurve(CGPoint a, CGPoint b, CGPoint c, CGFloat t) 
 @implementation MetalTextMesh
 
 + (MTKMesh *)meshWithString:(NSString *)string
-                       font:(CTFontRef)font
+                       font:(UIFont *)font
              extrusionDepth:(CGFloat)extrusionDepth
            vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
             bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator
 {
     // Create an attributed string from the provided text; we make our own attributed string
     // to ensure that the entire mesh has a single style, which simplifies things greatly.
-    NSDictionary *attributes = @{ NSFontAttributeName : (__bridge id)font };
+    NSDictionary *attributes = @{ NSFontAttributeName : font };
     CFAttributedStringRef attributedString = CFAttributedStringCreate(NULL,
                                                                       (__bridge CFStringRef)string,
                                                                       (__bridge CFDictionaryRef)attributes);
