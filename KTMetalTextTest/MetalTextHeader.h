@@ -30,4 +30,10 @@ typedef struct {
     float y;
 }MetalPathVertex;
 
+typedef struct MetalMeshVertex {
+    float x, y, z;
+    float nx, ny, nz;
+    float s, t;
+}MetalMeshVertex;
+
 #endif /* MetalTextHeader_h */

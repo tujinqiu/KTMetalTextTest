@@ -25,6 +25,7 @@
 		E369AF2121B6ACF00049EB9B /* KTMetalTextTestUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = E369AF2021B6ACF00049EB9B /* KTMetalTextTestUITests.m */; };
 		E369AF2F21B6C5CB0049EB9B /* MetalTextShader.metal in Sources */ = {isa = PBXBuildFile; fileRef = E369AF2E21B6C5CB0049EB9B /* MetalTextShader.metal */; };
 		E369AF3221B6C5DB0049EB9B /* MetalTextRender.m in Sources */ = {isa = PBXBuildFile; fileRef = E369AF3121B6C5DB0049EB9B /* MetalTextRender.m */; };
+		E37BCECB21BF926B007721A7 /* wood.jpg in Resources */ = {isa = PBXBuildFile; fileRef = E37BCECA21BF926B007721A7 /* wood.jpg */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,6 +84,7 @@
 		E369AF3021B6C5DB0049EB9B /* MetalTextRender.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalTextRender.h; sourceTree = "<group>"; };
 		E369AF3121B6C5DB0049EB9B /* MetalTextRender.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MetalTextRender.m; sourceTree = "<group>"; };
 		E369AF4B21B6C6C10049EB9B /* MetalTextHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MetalTextHeader.h; sourceTree = "<group>"; };
+		E37BCECA21BF926B007721A7 /* wood.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = wood.jpg; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -172,6 +174,7 @@
 			isa = PBXGroup;
 			children = (
 				E3610D6021B79C7200D1F119 /* libtess2 */,
+				E37BCECA21BF926B007721A7 /* wood.jpg */,
 				E369AEFC21B6ACEE0049EB9B /* AppDelegate.h */,
 				E369AEFD21B6ACEE0049EB9B /* AppDelegate.m */,
 				E369AEFF21B6ACEE0049EB9B /* ViewController.h */,
@@ -313,6 +316,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E37BCECB21BF926B007721A7 /* wood.jpg in Resources */,
 				E369AF0921B6ACF00049EB9B /* LaunchScreen.storyboard in Resources */,
 				E369AF0621B6ACF00049EB9B /* Assets.xcassets in Resources */,
 				E369AF0421B6ACEE0049EB9B /* Main.storyboard in Resources */,

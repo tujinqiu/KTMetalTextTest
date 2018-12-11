@@ -8,12 +8,14 @@
 
 #import <UIKit/UIKit.h>
 #import <ModelIO/ModelIO.h>
+#import <MetalKit/MetalKit.h>
 
 @interface MetalTextMesh : NSObject
 
 + (instancetype)meshWithText:(NSString *)text
                         font:(UIFont *)font
                        color:(UIColor *)color
-            vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor;
+            vertexDescriptor:(MDLVertexDescriptor *)vertexDescriptor
+             bufferAllocator:(MTKMeshBufferAllocator *)bufferAllocator;
 
 @end
