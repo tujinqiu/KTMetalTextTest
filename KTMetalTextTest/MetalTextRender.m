@@ -27,7 +27,6 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 @interface MetalTextRender ()
 {
     MetalUniforms _uniforms;
-    matrix_float4x4 _projectionMatrix;
     float _rotation;
 }
 
@@ -122,7 +121,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
     self.textMesh = textMesh;
     
     matrix_float4x4 modelViewMatrix = [self p_getModelViewMatrix];
-    _uniforms.mvpMatrix = matrix_multiply(_projectionMatrix, modelViewMatrix);
+    _uniforms.modelViewMatrix = modelViewMatrix;
     self.uniformsBuffer = [self.device newBufferWithBytes:&_uniforms length:sizeof(MetalUniforms) options:MTLResourceStorageModeShared];
 }
 
@@ -155,7 +154,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 - (void)p_updateUniforms
 {
     matrix_float4x4 modelViewMatrix = [self p_getModelViewMatrix];
-    _uniforms.mvpMatrix = matrix_multiply(_projectionMatrix, modelViewMatrix);
+    _uniforms.modelViewMatrix = modelViewMatrix;
     void *contents = [self.uniformsBuffer contents];
     memcpy(contents, &_uniforms, sizeof(MetalUniforms));
     
@@ -189,11 +188,12 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
         int i = 0;
         for (MTKMeshBuffer *vertexBuffer in self.textMesh.vertexBuffers) {
             if ([vertexBuffer isKindOfClass:[MTKMeshBuffer class]]) {
-                [renderEncoder setVertexBuffer:vertexBuffer.buffer offset:vertexBuffer.offset atIndex:i++];
+                [renderEncoder setVertexBuffer:vertexBuffer.buffer offset:vertexBuffer.offset atIndex:MetalBufferIndexUniforms + i];
+                i++;
             }
         }
         
-        [renderEncoder setFragmentTexture:self.texture atIndex:0];
+        [renderEncoder setFragmentTexture:self.texture atIndex:MetalFragmentTextureIndex];
         
         for(MTKSubmesh *submesh in self.textMesh.submeshes) {
             [renderEncoder drawIndexedPrimitives:submesh.primitiveType
@@ -221,7 +221,7 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 {
     float aspect = (float)size.width / (float)size.height;
     GLKMatrix4 matrix = GLKMatrix4MakePerspective(65.0f * (M_PI / 180.0f), aspect, 0.1f, 100.f);
-    _projectionMatrix = s_getMatrixFloat4x4FromGlMatrix4(matrix);
+    _uniforms.projectionMatrix = s_getMatrixFloat4x4FromGlMatrix4(matrix);
 }
 
 @end

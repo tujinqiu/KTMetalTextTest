@@ -11,29 +11,29 @@
 
 #include <simd/simd.h>
 
-typedef struct {
-    vector_float4 position;
-    vector_float4 color;
-}MetalVertex;
-
-typedef struct {
-    matrix_float4x4 mvpMatrix;
-}MetalUniforms;
-
-typedef enum {
-    MetalBufferIndexVertex = 0,
-    MetalBufferIndexUniforms = 1
-}MetalBufferIndex;
-
-typedef struct {
-    float x;
-    float y;
-}MetalPathVertex;
-
 typedef struct MetalMeshVertex {
     float x, y, z;
     float nx, ny, nz;
     float s, t;
 }MetalMeshVertex;
+
+typedef struct {
+    matrix_float4x4 modelViewMatrix;
+    matrix_float4x4 projectionMatrix;
+}MetalUniforms;
+
+typedef enum {
+    MetalBufferIndexUniforms = 0,
+    MetalBufferIndexVertex = 1,
+}MetalBufferIndex;
+
+typedef enum {
+    MetalFragmentTextureIndex = 0,
+}MetalFragmentIndex;
+
+typedef struct {
+    float x;
+    float y;
+}MetalPathVertex;
 
 #endif /* MetalTextHeader_h */
