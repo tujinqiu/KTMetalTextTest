@@ -34,7 +34,6 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
 @property(nonatomic, strong) id<MTLDevice> device;
 @property(nonatomic, strong) id<MTLCommandQueue> commandQueue;
 @property(nonatomic, strong) id<MTLRenderPipelineState> renderPipelineState;
-@property(nonatomic, strong) id<MTLDepthStencilState> depthStencilState;
 @property(nonatomic, strong) id<MTLBuffer> uniformsBuffer;
 
 @property(nonatomic, strong) dispatch_semaphore_t frameBoundarySemaphore;
@@ -97,11 +96,6 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
     if (error) {
         NSLog(@"build pipeline error");
     }
-    
-    MTLDepthStencilDescriptor *depthStateDesccriptor = [[MTLDepthStencilDescriptor alloc] init];
-    depthStateDesccriptor.depthCompareFunction = MTLCompareFunctionLess;
-    depthStateDesccriptor.depthWriteEnabled = YES;
-    self.depthStencilState = [self.device newDepthStencilStateWithDescriptor:depthStateDesccriptor];
 }
 
 - (void)p_setupBuffers
@@ -147,7 +141,6 @@ static inline matrix_float4x4 s_getMatrixFloat4x4FromGlMatrix4(GLKMatrix4 glMatr
         [renderEncoder setFrontFacingWinding:MTLWindingCounterClockwise];
         [renderEncoder setCullMode:MTLCullModeBack];
         [renderEncoder setRenderPipelineState:self.renderPipelineState];
-        [renderEncoder setDepthStencilState:self.depthStencilState];
         [renderEncoder setTriangleFillMode:MTLTriangleFillModeLines];
         
         [renderEncoder setVertexBuffer:self.uniformsBuffer offset:0 atIndex:MetalBufferIndexUniforms];
